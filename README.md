@@ -20,7 +20,7 @@ curl -O https://bootstrap.pypa.io/get-pip.py
 python3 get-pip.py --user
 sudo yum update -y
 sudo yum install git -y
-git clone https://github.com/roblee04/Distributed_File_System/
+git clone https://github.com/jrandleman/Distributed-File-System/
 pip install Flask
 ```
 
@@ -106,12 +106,12 @@ can now launch our EC2 instances!
 We can set up our EC2s to use `client/dfs.py` by doing the following:
 
 1. SSH into the 1st UVM and its RVMs.
-2. In the UVM: `cd Distributed_File_System/submission/uvm/ && python3 server.py 1`
-3. In each RVM: `cd Distributed_File_System/submission/rvm/ && python3 server.py 1`
+2. In the UVM: `cd Distributed-File-System/uvm/ && python3 server.py 1`
+3. In each RVM: `cd Distributed-File-System/rvm/ && python3 server.py 1`
    * Note that all 3 RVMs must launch within 3sec of one another, otherwise a leader will be preemptively elected!
 4. SSH into the 2nd UVM and its RVMs. Launch its UVM and RVMs exactly like the 1st UVM, but with `2` instead of `1`.
-5. SSH into the pool RVMs, and run: `cd Distributed_File_System/submission/rvm/ && python3 server.py 0`
-6. SSH into the router, and run: `cd Distributed_File_System/submission/ && python3 server.py`
+5. SSH into the pool RVMs, and run: `cd Distributed-File-System/rvm/ && python3 server.py 0`
+6. SSH into the router, and run: `cd Distributed-File-System/ && python3 server.py`
 
 Then, in another terminal, navigate into `client/`. Run `python3` at the command line to launch the REPL, 
 then `import dfs` to be able to use `dfs.py`'s functions as methods on the `dfs` module object, thereby 
