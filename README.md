@@ -4,9 +4,9 @@
 
 ## Demo:
 
-Click [here to see our full presentation](https://drive.google.com/file/d/1KEdpIWmwTiQI5JqayLYEiUagg5NxNlNX/view?usp=share_link) (slides + live demo) explaining the project's architecture and considerations!
+Click [here for our full presentation](https://drive.google.com/file/d/1KEdpIWmwTiQI5JqayLYEiUagg5NxNlNX/view?usp=share_link) (slides + live demo) on the project's design!
 
-Click [here to just see the live demo](https://drive.google.com/file/d/1JN760JJnjRhJ_41wJOrCsdDpsQmWonCm/view?usp=sharing) (proof of correctness)!
+Click [here just for our live demo](https://drive.google.com/file/d/1JN760JJnjRhJ_41wJOrCsdDpsQmWonCm/view?usp=sharing) (proof of correctness)!
 
 --------------------------------------------------------------------
 ## Dependencies:
