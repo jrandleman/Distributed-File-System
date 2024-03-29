@@ -234,21 +234,18 @@ def allocate_new_uvm(family_id: int, operation: str, path: str):
 
 
 # Determine which UVM can execute <operation> on <path>
-def route(operation: str, path: str, secondPath = False):
+def route(operation: str, path: str):
     log('Pinged to route operation <'+operation+'> to path <'+path+'>')
     viable_uvms = []
     with node_lock:
         for ip in nodes:
             response = uvm_can_be_routed_to(ip,operation,path)
-            if response != None:
-                if response.status_code == 200:
-                    if response.json().get('preferred'):
-                        log('Found a preferred UVM to route request to!')
-                        return 'http://'+ip+':5001'
-                    else:
-                        viable_uvms.append(ip)
-                elif response.status_code == 507:
-                    return route('write',secondPath), response.json().get('data') # copy file to another machine with space
+            if response != None and response.status_code == 200:
+                if response.json().get('preferred'):
+                    log('Found a preferred UVM to route request to!')
+                    return 'http://'+ip+':5001'
+                else:
+                    viable_uvms.append(ip)
     if len(viable_uvms) > 0:
         log('Found a viable UVM to route request to!')
         return 'http://'+viable_uvms[0]+":5001"
@@ -270,7 +267,20 @@ def route(operation: str, path: str, secondPath = False):
 def read(path: str):
     try:
         # find route, and send request to node
-        url_header = route('read',path)
+        token = int(request.args.get('token','-1'))
+        if token == -1:
+            url_header = route('read',path)
+            if isinstance(url_header,int):
+                return jsonify({'token': url_header}), 425 # allocating a VM
+        else:
+            log('Received duplicate request with token '+str(token)+' !')
+            with ALLOCATED_UVMS_LOCK:
+                if token in ALLOCATED_UVMS:
+                    url_header = ALLOCATED_UVMS[token] # done allocating
+                    log('Finished allocating resource '+str(token)+'! Operation will continue at url: '+url_header)
+                else:
+                    log('Still allocating resource '+str(token)+'! Still waiting ...')
+                    return jsonify({'token': token}), 425 # still allocating
         response = requests.get(url_header+"/read/"+path)
         # when the node responds back, forward response back to client
         if response.status_code == 200:
@@ -317,7 +327,20 @@ def write(path: str, data: str):
 def delete(path: str):
     try:
         # find route, and send request to node
-        url_header = route('rename',old_path)
+        token = int(request.args.get('token','-1'))
+        if token == -1:
+            url_header = route('delete',path)
+            if isinstance(url_header,int):
+                return jsonify({'token': url_header}), 425 # allocating a VM
+        else:
+            log('Received duplicate request with token '+str(token)+' !')
+            with ALLOCATED_UVMS_LOCK:
+                if token in ALLOCATED_UVMS:
+                    url_header = ALLOCATED_UVMS[token] # done allocating
+                    log('Finished allocating resource '+str(token)+'! Operation will continue at url: '+url_header)
+                else:
+                    log('Still allocating resource '+str(token)+'! Still waiting ...')
+                    return jsonify({'token': token}), 425 # still allocating
         response = requests.get(url_header+"/delete/"+path)
         if response.status_code == 200:
             return jsonify({}), 200
@@ -330,30 +353,14 @@ def delete(path: str):
 
 ##############################################################################
 # Copy <src_path> to <dest_path>
-def copy_to_another_machine(url_header: str, dest_path: str, data: str):
-    try:
-        response = requests.get(url_header+"/write/"+dest_path+"/"+data)
-        # when the node responds back, forward reponse back to client
-        if response.status_code == 200:
-            return jsonify({}), 200
-        else:
-            raise Exception("router> Copy Error Code " + str(response.status_code))
-    except Exception as err_msg:
-        return jsonify({'error': str(err_msg)}), 400
-
-
 @app.route('/copy/<src_path>/<dest_path>', methods=['GET'])
 def copy(src_path: str, dest_path: str):
     try:
         token = int(request.args.get('token','-1'))
         if token == -1:
-            url_header = route('copy',src_path,dest_path)
-            if isinstance(url_header,tuple):
-                data = url_header[1]
-                url_header = url_header[0]
-                if isinstance(url_header,int):
-                    return jsonify({'token': url_header, 'data': data}), 425 # allocating a VM
-                return copy_to_another_machine(url_header,dest_path,data)
+            url_header = route('copy',src_path)
+            if isinstance(url_header,int):
+                return jsonify({'token': url_header}), 425 # allocating a VM
         else:
             log('Received duplicate request with token '+str(token)+' !')
             with ALLOCATED_UVMS_LOCK:
@@ -362,8 +369,7 @@ def copy(src_path: str, dest_path: str):
                     log('Finished allocating resource '+str(token)+'! Operation will continue at url: '+url_header)
                 else:
                     log('Still allocating resource '+str(token)+'! Still waiting ...')
-                    data = request.args.get('data','')
-                    return jsonify({'token': token, 'data': data}), 425 # still allocating
+                    return jsonify({'token': token}), 425 # still allocating
         response = requests.get(url_header+"/copy/"+src_path+"/"+dest_path)
         if response.status_code == 200:
             return jsonify({}), 200
@@ -374,14 +380,25 @@ def copy(src_path: str, dest_path: str):
         return jsonify({'error': str(err_msg)}), 400
 
 
-
 ##############################################################################
 # Rename <old_path> as <new_path>
 @app.route('/rename/<old_path>/<new_path>', methods=['GET'])
 def rename(old_path: str, new_path: str):
     try:
-        # find route, and send request to node
-        url_header = route('rename',old_path)
+        token = int(request.args.get('token','-1'))
+        if token == -1:
+            url_header = route('rename',old_path)
+            if isinstance(url_header,int):
+                return jsonify({'token': url_header}), 425 # allocating a VM
+        else:
+            log('Received duplicate request with token '+str(token)+' !')
+            with ALLOCATED_UVMS_LOCK:
+                if token in ALLOCATED_UVMS:
+                    url_header = ALLOCATED_UVMS[token] # done allocating
+                    log('Finished allocating resource '+str(token)+'! Operation will continue at url: '+url_header)
+                else:
+                    log('Still allocating resource '+str(token)+'! Still waiting ...')
+                    return jsonify({'token': token}), 425 # still allocating
         response = requests.get(url_header+"/rename/"+old_path+"/"+new_path)
         if response.status_code == 200:
             return jsonify({}), 200
@@ -397,10 +414,22 @@ def rename(old_path: str, new_path: str):
 @app.route('/exists/<path>', methods=['GET'])
 def exists(path: str):
     try:
-        # find route, and send request to node
-        url_header = route('exists',path)
-        if isinstance(url_header,bool):
-            return jsonify({'exists': url_header}), 200 # resolved whether existed early
+        token = int(request.args.get('token','-1'))
+        if token == -1:
+            url_header = route('exists',path)
+            if isinstance(url_header,int):
+                return jsonify({'token': url_header}), 425 # allocating a VM
+            if isinstance(url_header,bool):
+                return jsonify({'exists': url_header}), 200 # resolved whether existed early
+        else:
+            log('Received duplicate request with token '+str(token)+' !')
+            with ALLOCATED_UVMS_LOCK:
+                if token in ALLOCATED_UVMS:
+                    url_header = ALLOCATED_UVMS[token] # done allocating
+                    log('Finished allocating resource '+str(token)+'! Operation will continue at url: '+url_header)
+                else:
+                    log('Still allocating resource '+str(token)+'! Still waiting ...')
+                    return jsonify({'token': token}), 425 # still allocating
         response = requests.get(url_header+"/exists/"+path)
         if response.status_code == 200:
             return jsonify({'exists': response.json().get("exists")}), 200

@@ -333,8 +333,7 @@ def uvm_can_be_routed_with(operation, path):
         log('Pinged whether can support operation "'+operation+'" on file "'+path+'"!')
         if fs.exists(path):
             if operation == 'copy' and not can_add_files_to_this_machine():
-                _, data = fs.read(path, 0, fs.READ_ENTIRE_PATH)
-                return jsonify({'data': data}), 507
+                return jsonify({'error': 'UVM can\'t support operation "'+operation+'" for file "'+path+'"'}), 403
             return jsonify({ 'preferred': True }), 200
         if operation == 'exists':
             return jsonify({ 'preferred': False }), 200 # use this UVM iff no others have the file
