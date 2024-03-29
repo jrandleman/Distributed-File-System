@@ -2,6 +2,7 @@
 
 ## Team Members: Jordan Randleman, Rahul Yalavarthi, Robin Lee
 
+--------------------------------------------------------------------
 ## Demo:
 
 Click [here for our full presentation](https://drive.google.com/file/d/1KEdpIWmwTiQI5JqayLYEiUagg5NxNlNX/view?usp=share_link) (slides + live demo) on the project's design!
